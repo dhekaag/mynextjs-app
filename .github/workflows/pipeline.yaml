@@ -1,4 +1,4 @@
-name: CI/CD Pipeline Next.js App
+name: CI/CD Pipeline
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/mynextjs-app
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   # Job 1: Build dan Push Image
