@@ -1,8 +1,5 @@
 # My Next.js App
 
-![CI/CD Pipeline](https://github.com/username/mynextjs-app/actions/workflows/deploy.yaml/badge.svg)
-![Build and Test](https://github.com/username/mynextjs-app/actions/workflows/build-test.yaml/badge.svg)
-
 A modern Next.js application with multi-language typewriter effect, built with TypeScript, Tailwind CSS, and Framer Motion.
 
 ## ✨ Features
@@ -132,7 +129,7 @@ See [.github/WORKFLOWS.md](./.github/WORKFLOWS.md) for detailed workflow documen
 mynextjs-app/
 ├── .github/
 │   ├── workflows/          # GitHub Actions workflows
-│   └── WORKFLOWS.md        # Workflow documentation
+│
 ├── app/
 │   ├── page.tsx           # Main landing page
 │   ├── layout.tsx         # Root layout
@@ -148,8 +145,7 @@ mynextjs-app/
 ├── docker-compose.yml     # Docker Compose config
 ├── Dockerfile             # Multi-stage Dockerfile
 ├── k8s-deployment.yaml    # Kubernetes manifests
-├── Makefile              # Make commands
-└── README-DEPLOYMENT.md   # Deployment guide
+└── Makefile              # Make commands
 ```
 
 ## 🎯 Available Scripts
@@ -170,26 +166,7 @@ NODE_ENV=development
 NEXT_TELEMETRY_DISABLED=1
 ```
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
 ## 👨‍💻 Author
 
 **Agung Dwi Kurniyanto**  
 2210512007 - Cloud Computing Class
-
-## 📚 Learn More
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Docker Documentation](https://docs.docker.com/)
-- [Kubernetes Documentation](https://kubernetes.io/docs/)
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
