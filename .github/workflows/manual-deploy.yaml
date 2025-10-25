@@ -1,0 +1,116 @@
+name: Manual Deploy to Kubernetes
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (default: latest)"
+        required: false
+        default: "latest"
+      environment:
+        description: "Deployment environment"
+        required: true
+        type: choice
+        options:
+          - production
+          - staging
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/mynextjs-app
+
+jobs:
+  deploy:
+    name: Deploy to Kubernetes Cluster
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      # 1. Checkout repository
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Setup kubectl
+      - name: ⚙️ Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "latest"
+
+      # 3. Login to GHCR (untuk pull image)
+      - name: 🔐 Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 4. Configure kubeconfig
+      - name: 🔐 Configure Kubernetes cluster
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+        if: ${{ secrets.KUBECONFIG != '' }}
+
+      # 5. Update deployment with new image
+      - name: 🚀 Deploy to Kubernetes
+        run: |
+          IMAGE_TAG="${{ github.event.inputs.image_tag }}"
+          IMAGE_FULL="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
+
+          echo "Deploying image: $IMAGE_FULL"
+
+          # Update image di deployment
+          kubectl set image deployment/mynextjs-app \
+            mynextjs-app=$IMAGE_FULL \
+            -n mynextjs-app
+
+          # Tunggu rollout selesai
+          kubectl rollout status deployment/mynextjs-app \
+            -n mynextjs-app \
+            --timeout=5m
+
+          # Get deployment info
+          kubectl get deployment mynextjs-app -n mynextjs-app
+          kubectl get pods -n mynextjs-app -l app=mynextjs-app
+        if: ${{ secrets.KUBECONFIG != '' }}
+
+      # 6. Deployment summary
+      - name: 📊 Deployment Summary
+        run: |
+          echo "### ✅ Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Namespace:** mynextjs-app" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment:** mynextjs-app" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Next Steps:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Verify deployment: \`kubectl get pods -n mynextjs-app\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Check logs: \`kubectl logs -f deployment/mynextjs-app -n mynextjs-app\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Port forward: \`kubectl port-forward svc/mynextjs-service 3000:80 -n mynextjs-app\`" >> $GITHUB_STEP_SUMMARY
+        if: ${{ secrets.KUBECONFIG != '' }}
+
+      # 7. Manual deployment instructions (fallback)
+      - name: 📝 Manual Deployment Instructions
+        run: |
+          echo "### ⚠️ KUBECONFIG Not Configured" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "To complete deployment manually:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "1. **Setup KUBECONFIG secret:**" >> $GITHUB_STEP_SUMMARY
+          echo "   - Go to Settings → Secrets → Actions" >> $GITHUB_STEP_SUMMARY
+          echo "   - Add new secret: \`KUBECONFIG\`" >> $GITHUB_STEP_SUMMARY
+          echo "   - Value: Base64 encoded kubeconfig file" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "2. **Or deploy manually:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "kubectl set image deployment/mynextjs-app \\" >> $GITHUB_STEP_SUMMARY
+          echo "  mynextjs-app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }} \\" >> $GITHUB_STEP_SUMMARY
+          echo "  -n mynextjs-app" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        if: ${{ secrets.KUBECONFIG == '' }}

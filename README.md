@@ -1,36 +1,195 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# My Next.js App
 
-## Getting Started
+![CI/CD Pipeline](https://github.com/username/mynextjs-app/actions/workflows/deploy.yaml/badge.svg)
+![Build and Test](https://github.com/username/mynextjs-app/actions/workflows/build-test.yaml/badge.svg)
 
-First, run the development server:
+A modern Next.js application with multi-language typewriter effect, built with TypeScript, Tailwind CSS, and Framer Motion.
+
+## ✨ Features
+
+- 🎨 **Multi-Language Typewriter Effect** - Animated text in Indonesian, English, Japanese, and French
+- 🎭 **Framer Motion Animations** - Smooth transitions and effects
+- 🌓 **Dark Mode Support** - Automatic dark/light theme
+- 📱 **Responsive Design** - Mobile-first approach
+- 🐳 **Docker Ready** - Development and production containers
+- ☸️ **Kubernetes Manifests** - Ready for K8s deployment
+- 🚀 **CI/CD Pipeline** - Automated GitHub Actions workflows
+
+## 🚀 Quick Start
+
+### Development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Install dependencies
+pnpm install
+
+# Run development server
 pnpm dev
+
+# Or using Docker
+make dev
 # or
-bun dev
+docker compose --profile dev up
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Build application
+pnpm build
 
-## Learn More
+# Start production server
+pnpm start
 
-To learn more about Next.js, take a look at the following resources:
+# Or using Docker
+make prod
+# or
+docker compose --profile prod up
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🐳 Docker Commands
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# Development
+make dev              # Build & run development
+make up-dev           # Start in background
+make logs-dev         # View logs
+make down-dev         # Stop container
 
-## Deploy on Vercel
+# Production
+make prod             # Build & run production
+make up-prod          # Start in background
+make logs-prod        # View logs
+make down-prod        # Stop container
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# General
+make help             # Show all commands
+make clean            # Clean up containers
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## ☸️ Kubernetes Deployment
+
+```bash
+# Build production image
+make build-image
+
+# Deploy to Kubernetes
+make k8s-deploy
+
+# Check status
+make k8s-status
+
+# View logs
+make k8s-logs
+
+# Port forward (localhost:3000)
+make k8s-port-forward
+
+# Delete deployment
+make k8s-delete
+```
+
+See [README-DEPLOYMENT.md](./README-DEPLOYMENT.md) for detailed deployment guide.
+
+## 📦 GitHub Container Registry
+
+Images are automatically built and pushed to GHCR on every push to `main`:
+
+```bash
+# Pull latest image
+docker pull ghcr.io/<username>/mynextjs-app/mynextjs-app:latest
+
+# Run container
+docker run -d -p 3000:3000 ghcr.io/<username>/mynextjs-app/mynextjs-app:latest
+```
+
+## 🔄 CI/CD Workflows
+
+This project uses GitHub Actions for automated CI/CD:
+
+- **CI/CD Pipeline** - Auto-build and push to GHCR on main branch
+- **Build & Test** - Run tests and linting on PRs
+- **Docker Release** - Multi-platform builds for releases
+
+See [.github/WORKFLOWS.md](./.github/WORKFLOWS.md) for detailed workflow documentation.
+
+## 🛠️ Tech Stack
+
+- **Framework:** [Next.js 15](https://nextjs.org/)
+- **Language:** [TypeScript](https://www.typescriptlang.org/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **Animation:** [Framer Motion](https://www.framer.com/motion/)
+- **Package Manager:** [pnpm](https://pnpm.io/)
+- **Containerization:** [Docker](https://www.docker.com/)
+- **Orchestration:** [Kubernetes](https://kubernetes.io/)
+- **CI/CD:** [GitHub Actions](https://github.com/features/actions)
+
+## 📁 Project Structure
+
+```
+mynextjs-app/
+├── .github/
+│   ├── workflows/          # GitHub Actions workflows
+│   └── WORKFLOWS.md        # Workflow documentation
+├── app/
+│   ├── page.tsx           # Main landing page
+│   ├── layout.tsx         # Root layout
+│   └── globals.css        # Global styles
+├── components/
+│   └── ui/
+│       ├── multi-language-typewriter.tsx
+│       └── typewriter-effect.tsx
+├── lib/
+│   └── utils.ts           # Utility functions
+├── public/                # Static assets
+├── .dockerignore
+├── docker-compose.yml     # Docker Compose config
+├── Dockerfile             # Multi-stage Dockerfile
+├── k8s-deployment.yaml    # Kubernetes manifests
+├── Makefile              # Make commands
+└── README-DEPLOYMENT.md   # Deployment guide
+```
+
+## 🎯 Available Scripts
+
+```bash
+pnpm dev          # Start development server
+pnpm build        # Build for production
+pnpm start        # Start production server
+pnpm lint         # Run ESLint
+```
+
+## 📝 Environment Variables
+
+Create `.env.local` file for local development:
+
+```env
+NODE_ENV=development
+NEXT_TELEMETRY_DISABLED=1
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 👨‍💻 Author
+
+**Agung Dwi Kurniyanto**  
+2210512007 - Cloud Computing Class
+
+## 📚 Learn More
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Docker Documentation](https://docs.docker.com/)
+- [Kubernetes Documentation](https://kubernetes.io/docs/)
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
