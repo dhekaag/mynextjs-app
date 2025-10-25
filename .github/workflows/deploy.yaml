@@ -98,13 +98,14 @@ jobs:
 
       # 3. Configure kubeconfig (jika ada KUBECONFIG secret)
       - name: 🔐 Configure Kubernetes cluster
+        if: vars.ENABLE_K8S_DEPLOY == 'true'
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
-        if: ${{ secrets.KUBECONFIG != '' }}
 
       # 4. Update image di deployment
       - name: 🔄 Update Kubernetes deployment
+        if: vars.ENABLE_K8S_DEPLOY == 'true'
         run: |
           # Update image di k8s-deployment.yaml
           sed -i "s|image: mynextjs-app:latest|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}|g" k8s-deployment.yaml
@@ -114,20 +115,20 @@ jobs:
 
           # Tunggu rollout selesai
           kubectl rollout status deployment/mynextjs-app -n mynextjs-app --timeout=5m
-        if: ${{ secrets.KUBECONFIG != '' }}
 
       # 5. Output deployment status
       - name: 📊 Deployment summary
+        if: vars.ENABLE_K8S_DEPLOY == 'true'
         run: |
           echo "### ☸️ Kubernetes Deployment Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Namespace:** mynextjs-app" >> $GITHUB_STEP_SUMMARY
           echo "**Deployment:** mynextjs-app" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-        if: ${{ secrets.KUBECONFIG != '' }}
 
       # 6. Manual deployment instructions (jika tidak ada KUBECONFIG)
       - name: 📝 Manual deployment instructions
+        if: vars.ENABLE_K8S_DEPLOY != 'true'
         run: |
           echo "### 📋 Manual Deployment Instructions" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -148,4 +149,3 @@ jobs:
           echo "# 4. Verify deployment" >> $GITHUB_STEP_SUMMARY
           echo "kubectl rollout status deployment/mynextjs-app -n mynextjs-app" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-        if: ${{ secrets.KUBECONFIG == '' }}

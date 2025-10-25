@@ -54,9 +54,8 @@ jobs:
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-        if: ${{ secrets.KUBECONFIG != '' }}
 
-      # 5. Update deployment with new image
+      # 5. Deploy to Kubernetes
       - name: 🚀 Deploy to Kubernetes
         run: |
           IMAGE_TAG="${{ github.event.inputs.image_tag }}"
@@ -77,7 +76,6 @@ jobs:
           # Get deployment info
           kubectl get deployment mynextjs-app -n mynextjs-app
           kubectl get pods -n mynextjs-app -l app=mynextjs-app
-        if: ${{ secrets.KUBECONFIG != '' }}
 
       # 6. Deployment summary
       - name: 📊 Deployment Summary
@@ -93,24 +91,3 @@ jobs:
           echo "- Verify deployment: \`kubectl get pods -n mynextjs-app\`" >> $GITHUB_STEP_SUMMARY
           echo "- Check logs: \`kubectl logs -f deployment/mynextjs-app -n mynextjs-app\`" >> $GITHUB_STEP_SUMMARY
           echo "- Port forward: \`kubectl port-forward svc/mynextjs-service 3000:80 -n mynextjs-app\`" >> $GITHUB_STEP_SUMMARY
-        if: ${{ secrets.KUBECONFIG != '' }}
-
-      # 7. Manual deployment instructions (fallback)
-      - name: 📝 Manual Deployment Instructions
-        run: |
-          echo "### ⚠️ KUBECONFIG Not Configured" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "To complete deployment manually:" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "1. **Setup KUBECONFIG secret:**" >> $GITHUB_STEP_SUMMARY
-          echo "   - Go to Settings → Secrets → Actions" >> $GITHUB_STEP_SUMMARY
-          echo "   - Add new secret: \`KUBECONFIG\`" >> $GITHUB_STEP_SUMMARY
-          echo "   - Value: Base64 encoded kubeconfig file" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "2. **Or deploy manually:**" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "kubectl set image deployment/mynextjs-app \\" >> $GITHUB_STEP_SUMMARY
-          echo "  mynextjs-app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }} \\" >> $GITHUB_STEP_SUMMARY
-          echo "  -n mynextjs-app" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-        if: ${{ secrets.KUBECONFIG == '' }}
