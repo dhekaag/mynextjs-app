@@ -99,11 +99,16 @@ jobs:
 
       # 4. Deploy to Kubernetes
       - name: ☸️ Deploy to Kubernetes
-        run: multipass exec microk8s-vm -- make k8s-deploy
+        run: |
+          multipass exec microk8s-vm -- microk8s kubectl apply -f - <<EOF
+          $(cat k8s-deployment.yaml)
+          EOF
 
       # 5. Verify deployment
       - name: ✅ Verify deployment
-        run: multipass exec microk8s-vm -- make k8s-status
+        run: |
+          multipass exec microk8s-vm -- microk8s kubectl get pods,svc,ingress -n mynextjs-app
+          multipass exec microk8s-vm -- microk8s kubectl rollout status deployment/mynextjs-app -n mynextjs-app --timeout=5m
 
       # 6. Deployment summary
       - name: 📊 Deployment summary
@@ -113,9 +118,14 @@ jobs:
           echo "**Namespace:** mynextjs-app" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Pods status:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          multipass exec microk8s-vm -- microk8s kubectl get pods -n mynextjs-app >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Access application:**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "make k8s-port-forward" >> $GITHUB_STEP_SUMMARY
+          echo "microk8s kubectl port-forward svc/mynextjs-service 3000:80 -n mynextjs-app" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
   # Job 3: Manual deployment instructions
@@ -143,8 +153,11 @@ jobs:
           echo "multipass exec microk8s-vm -- microk8s ctr image import /tmp/mynextjs-app.tar" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Deploy" >> $GITHUB_STEP_SUMMARY
-          echo "make k8s-deploy" >> $GITHUB_STEP_SUMMARY
+          echo "microk8s kubectl apply -f k8s-deployment.yaml" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Verify" >> $GITHUB_STEP_SUMMARY
+          echo "microk8s kubectl get pods -n mynextjs-app" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Access application" >> $GITHUB_STEP_SUMMARY
-          echo "make k8s-port-forward" >> $GITHUB_STEP_SUMMARY
+          echo "microk8s kubectl port-forward svc/mynextjs-service 3000:80 -n mynextjs-app" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
