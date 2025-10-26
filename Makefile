@@ -27,6 +27,16 @@ help:
 	@echo "  make logs-prod    - View production logs"
 	@echo "  make restart-prod - Restart production container"
 	@echo ""
+	@echo "Kubernetes (MicroK8s):"
+	@echo "  make k8s-deploy        - Deploy to Kubernetes"
+	@echo "  make k8s-delete        - Delete Kubernetes resources"
+	@echo "  make k8s-status        - Show Kubernetes status"
+	@echo "  make k8s-logs          - View Kubernetes logs"
+	@echo "  make k8s-port-forward  - Port forward to localhost:3000"
+	@echo "  make k8s-scale         - Scale deployment (use REPLICAS=N)"
+	@echo "  make k8s-stop          - Stop all pods (scale to 0)"
+	@echo "  make k8s-start         - Start pods (scale to 3)"
+	@echo ""
 	@echo "General:"
 	@echo "  make clean        - Remove all containers and images"
 	@echo "  make ps           - Show running containers"
@@ -99,32 +109,40 @@ shell-prod:
 	docker exec -it $(PROD_CONTAINER) sh
 
 # ==========================================
-# Kubernetes Commands
+# Kubernetes Commands (MicroK8s)
 # ==========================================
 
 k8s-deploy:
 	@echo "☸️  Deploying to Kubernetes..."
-	kubectl apply -f k8s-deployment.yaml
+	microk8s kubectl apply -f k8s-deployment.yaml
 
 k8s-delete:
 	@echo "🗑️  Deleting Kubernetes resources..."
-	kubectl delete -f k8s-deployment.yaml
+	microk8s kubectl delete -f k8s-deployment.yaml
 
 k8s-status:
 	@echo "📊 Kubernetes status..."
-	kubectl get pods,svc,ingress -n mynextjs-app
+	microk8s kubectl get pods,svc,ingress -n mynextjs-app
 
 k8s-logs:
 	@echo "📋 Kubernetes logs..."
-	kubectl logs -f deployment/mynextjs-app -n mynextjs-app
+	microk8s kubectl logs -f deployment/mynextjs-app -n mynextjs-app
 
 k8s-port-forward:
 	@echo "🔌 Port forwarding to localhost:3000..."
-	kubectl port-forward svc/mynextjs-service 3000:80 -n mynextjs-app
+	microk8s kubectl port-forward svc/mynextjs-service 3000:80 -n mynextjs-app
 
 k8s-scale:
-	@echo "⚖️  Scaling deployment..."
-	kubectl scale deployment mynextjs-app --replicas=$(REPLICAS) -n mynextjs-app
+	@echo "⚖️  Scaling deployment to $(REPLICAS) replicas..."
+	microk8s kubectl scale deployment mynextjs-app --replicas=$(REPLICAS) -n mynextjs-app
+
+k8s-stop:
+	@echo "⏹️  Stopping all pods (scaling to 0)..."
+	microk8s kubectl scale deployment mynextjs-app --replicas=0 -n mynextjs-app
+
+k8s-start:
+	@echo "▶️  Starting pods (scaling to 3)..."
+	microk8s kubectl scale deployment mynextjs-app --replicas=3 -n mynextjs-app
 
 # ==========================================
 # Docker Image Commands

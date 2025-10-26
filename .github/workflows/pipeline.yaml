@@ -3,7 +3,7 @@ name: CI/CD Pipeline
 on:
   push:
     branches: ["main"]
-  workflow_dispatch: # Untuk manual trigger jika diperlukan
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -69,20 +69,15 @@ jobs:
           echo "**Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** \`${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Pull command:**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
-  # Job 2: Deploy ke Kubernetes (Otomatis)
+  # Job 2: Deploy ke Kubernetes
   deploy-kubernetes:
     name: Deploy to Kubernetes
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build-and-push
     if: ${{ vars.ENABLE_K8S_DEPLOY == 'true' }}
 
@@ -91,65 +86,39 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Setup kubectl
-      - name: ⚙️ Setup kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: "latest"
+      # 2. Pull latest image from GHCR
+      - name: 🔄 Pull latest image from GHCR
+        run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
-      # 3. Write kubeconfig to file
-      - name: 🔐 Write kubeconfig to file
+      # 3. Save and transfer image to MicroK8s
+      - name: 💾 Save and transfer image to MicroK8s
         run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest -o /tmp/mynextjs-app.tar
+          multipass transfer /tmp/mynextjs-app.tar microk8s-vm:/tmp/
+          multipass exec microk8s-vm -- microk8s ctr image import /tmp/mynextjs-app.tar
 
-      # 4. Verify connection
-      - name: ✅ Verify Kubernetes connection
-        env:
-          KUBECONFIG: $HOME/.kube/config
-        run: |
-          kubectl cluster-info
-          kubectl get nodes
+      # 4. Deploy to Kubernetes
+      - name: ☸️ Deploy to Kubernetes
+        run: multipass exec microk8s-vm -- make k8s-deploy
 
-      # 5. Update deployment image
-      - name: 🔄 Update Kubernetes deployment
-        env:
-          KUBECONFIG: $HOME/.kube/config
-        run: |
-          # Update image di k8s-deployment.yaml
-          sed -i "s|image: mynextjs-app:latest|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest|g" k8s-deployment.yaml
+      # 5. Verify deployment
+      - name: ✅ Verify deployment
+        run: multipass exec microk8s-vm -- make k8s-status
 
-          # Apply deployment
-          kubectl apply -f k8s-deployment.yaml
-
-          # Tunggu rollout selesai
-          kubectl rollout status deployment/mynextjs-app -n mynextjs-app --timeout=5m
-
-      # 6. Get deployment info
-      - name: 📊 Get deployment status
-        env:
-          KUBECONFIG: $HOME/.kube/config
-        run: |
-          kubectl get deployment mynextjs-app -n mynextjs-app
-          kubectl get pods -n mynextjs-app -l app=mynextjs-app
-          kubectl get svc -n mynextjs-app
-
-      # 7. Output deployment summary
+      # 6. Deployment summary
       - name: 📊 Deployment summary
         run: |
           echo "### ✅ Kubernetes Deployment Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Namespace:** mynextjs-app" >> $GITHUB_STEP_SUMMARY
-          echo "**Deployment:** mynextjs-app" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Next Steps:**" >> $GITHUB_STEP_SUMMARY
-          echo "- Port forward: \`kubectl port-forward svc/mynextjs-service 3000:80 -n mynextjs-app\`" >> $GITHUB_STEP_SUMMARY
-          echo "- View logs: \`kubectl logs -f deployment/mynextjs-app -n mynextjs-app\`" >> $GITHUB_STEP_SUMMARY
-          echo "- View pods: \`kubectl get pods -n mynextjs-app\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Access application:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "make k8s-port-forward" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
-  # Job 3: Deployment instructions (jika KUBECONFIG tidak ada)
+  # Job 3: Manual deployment instructions
   deployment-instructions:
     name: Manual Deployment Instructions
     runs-on: ubuntu-latest
@@ -161,24 +130,21 @@ jobs:
         run: |
           echo "### 📋 Manual Deployment Required" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "⚠️ Auto-deployment is disabled. Please deploy manually:" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ Auto-deployment is disabled." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deploy manually:**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "# 1. Pull latest image" >> $GITHUB_STEP_SUMMARY
+          echo "# Pull image" >> $GITHUB_STEP_SUMMARY
           echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# 2. Import to MicroK8s (if using MicroK8s)" >> $GITHUB_STEP_SUMMARY
+          echo "# Transfer to MicroK8s" >> $GITHUB_STEP_SUMMARY
           echo "docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest -o /tmp/mynextjs-app.tar" >> $GITHUB_STEP_SUMMARY
           echo "multipass transfer /tmp/mynextjs-app.tar microk8s-vm:/tmp/" >> $GITHUB_STEP_SUMMARY
-          echo "microk8s ctr image import /tmp/mynextjs-app.tar" >> $GITHUB_STEP_SUMMARY
+          echo "multipass exec microk8s-vm -- microk8s ctr image import /tmp/mynextjs-app.tar" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# 3. Update deployment image" >> $GITHUB_STEP_SUMMARY
-          echo "kubectl set image deployment/mynextjs-app mynextjs-app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest -n mynextjs-app" >> $GITHUB_STEP_SUMMARY
+          echo "# Deploy" >> $GITHUB_STEP_SUMMARY
+          echo "make k8s-deploy" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# 4. Verify deployment" >> $GITHUB_STEP_SUMMARY
-          echo "kubectl rollout status deployment/mynextjs-app -n mynextjs-app" >> $GITHUB_STEP_SUMMARY
+          echo "# Access application" >> $GITHUB_STEP_SUMMARY
+          echo "make k8s-port-forward" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**To enable auto-deployment:**" >> $GITHUB_STEP_SUMMARY
-          echo "1. Set variable \`ENABLE_K8S_DEPLOY\` = \`true\`" >> $GITHUB_STEP_SUMMARY
-          echo "2. Add \`KUBECONFIG\` secret (base64 encoded)" >> $GITHUB_STEP_SUMMARY
