@@ -99,12 +99,12 @@ metadata:
   name: mynextjs-ingress
   namespace: mynextjs-app
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+
 spec:
   ingressClassName: nginx
   rules:
-    - host: mynextjs-app.example.com
+    - host: mynextjs-app.local
       http:
         paths:
           - path: /
@@ -114,10 +114,6 @@ spec:
                 name: mynextjs-service
                 port:
                   number: 80
-  tls:
-    - hosts:
-        - mynextjs-app.example.com
-      secretName: mynextjs-tls
 
 ---
 # HorizontalPodAutoscaler
