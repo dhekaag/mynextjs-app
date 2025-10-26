@@ -2,7 +2,7 @@
 
 A modern Next.js application with multi-language typewriter effect and full CI/CD pipeline.
 
-![Page Screenshot](./page-screenshot.png)
+![Page Screenshot](./public/page-screenshoot.png)
 
 ## ✨ Features
 
